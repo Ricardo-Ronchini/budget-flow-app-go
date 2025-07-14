@@ -5,16 +5,18 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/labstack/echo/v4"
 )
 
 var jwtSecret = []byte("sua-chave-secreta-super-segura")
 
-func Middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
+func Middleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		authHeader := c.Request().Header.Get("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			http.Error(w, "Token ausente", http.StatusUnauthorized)
-			return
+			return c.JSON(http.StatusUnauthorized, echo.Map{
+				"erro": "Token inválido ou ausente",
+			})
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
@@ -28,17 +30,19 @@ func Middleware(next http.Handler) http.Handler {
 		})
 
 		if err != nil || !token.Valid {
-			http.Error(w, "Token inválido", http.StatusUnauthorized)
-			return
+			return c.JSON(http.StatusUnauthorized, echo.Map{
+				"erro": "Token inválido ou ausente",
+			})
 		}
 
 		// Extrai o userID e injeta no context da requisição
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			userID, _ := claims["user_id"].(string)
-			ctx := WithUserID(r.Context(), userID) // adiciona ao context
-			r = r.WithContext(ctx)                 // substitui o context na request
+			ctx := WithUserID(c.Request().Context(), userID)
+			req := c.Request().WithContext(ctx)
+			c.SetRequest(req)
 		}
 
-		next.ServeHTTP(w, r) // chama o próximo handler com o novo context
-	})
+		return next(c)
+	}
 }

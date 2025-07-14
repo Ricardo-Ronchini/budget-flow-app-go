@@ -1,49 +1,54 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/labstack/echo/v4"
 )
 
 var jwtSecret = []byte("sua-chave-secreta-super-segura") // ideal usar env
 
-type LoginRequest struct {
-	Usuario string `json:"usuario"`
-	Senha   string `json:"senha"`
+type LoginCredentials struct {
+	UserName string `json:"user_name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-func Login(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
-		return
+func Login(c echo.Context) error {
+	var creds LoginCredentials
+
+	// Faz o bind do JSON para a struct
+	if err := c.Bind(&creds); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"erro": "Formato do JSON inválido",
+		})
 	}
 
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "JSON inválido", http.StatusBadRequest)
-		return
+	// Validação fictícia (exemplo simples) | mock
+	if creds.Email != "teste@exemplo.com" || creds.Password != "123456" {
+		return c.JSON(http.StatusUnauthorized, echo.Map{
+			"erro": "Credenciais inválidas",
+		})
 	}
 
-	// Aqui você validaria no banco de dados
-	if req.Usuario != "admin" || req.Senha != "123" {
-		http.Error(w, "Credenciais inválidas", http.StatusUnauthorized)
-		return
+	// Criação do token JWT | mock
+	claims := jwt.MapClaims{
+		"user_id": "abc123",
+		"exp":     time.Now().Add(2 * time.Hour).Unix(),
 	}
 
-	// Gera o token JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": req.Usuario,
-		"exp":     time.Now().Add(time.Hour * 2).Unix(),
-	})
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString(jwtSecret)
+	tokenStr, err := token.SignedString(jwtSecret)
 	if err != nil {
-		http.Error(w, "Erro ao gerar token", http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"erro": "Erro ao gerar o token",
+		})
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": tokenStr,
+	})
 }

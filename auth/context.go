@@ -1,6 +1,8 @@
 package auth
 
-import "context"
+import (
+	"context"
+)
 
 // Criamos uma chave "tipo seguro" para evitar colisão com outras chaves do context
 type contextKey string

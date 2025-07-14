@@ -2,17 +2,19 @@ package main
 
 import (
 	"log"
-	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/ricardo-ronchini/budget-flow-app-go/router"
 )
 
 func main() {
-	r := router.Init() // Retorna o *http.ServeMux ou mux de algum framework
+	log.Println("Servidor iniciado em http://localhost:9000")
 
-	log.Println("Servidor iniciado em http://localhost:8080")
+	e := echo.New()
+	router.Init(e)
+	e.Logger.Fatal(e.Start(":8080"))
 
-	if err := http.ListenAndServe(":8080", r); err != nil {
-		log.Fatal("Error when start server:", err)
-	}
+	// if err := http.ListenAndServe(":9000", router.Init()); err != nil {
+	// 	log.Fatal("Error when start server:", err)
+	// }
 }
