@@ -7,34 +7,34 @@ import (
 	"github.com/ricardo-ronchini/budget-flow-app-go/handler"
 )
 
+type Routes *contexts.EchoHandler
+
 func Init(e *echo.Echo) {
-	// Estudar tecnologia das rotas a ser implementada
-	// *** trocar para gorila mux? - Esta sem manutençao faz tempo
-	// Gin?
-	// Chi?
-	// Echo?
-	// mux := http.NewServeMux()
-
-	// Rotas públicas
-	// mux.HandleFunc("/login", handler.Login) // precisa de ajuste
-
-	// Rotas protegidas
-	// mux.Handle("/expenses", auth.Middleware(http.HandlerFunc(handler.Expenses)))
-	// mux.Handle("/gastos/novo", auth.Middleware(http.HandlerFunc(handler.CriarGasto)))
-
 	// *** Echo ***
+	c := contexts.NewContext()
 
+	// no auth
 	e.POST("login", handler.Login)
 
 	// add middleware
 	api := e.Group("/api", auth.Middleware)
 
-	routes := []*contexts.WebRoute{
-		handler.V1ExpensesGET,
-		handler.V1ExpensesPOST,
-		handler.V1ExpensesPUT,
-		handler.V1ExpensesPATCH,
-		handler.V1ExpensesDELETE,
+	// middleware
+	// - CORS
+	// - Auth
+	// - Level
+
+	// auth's
+	routes := []Routes{
+		c.HandlerWebRoute(handler.V1UserGET),
+		// user
+		// handler.V1UserGET,
+		// // expense
+		// handler.V1ExpensesGET,
+		// handler.V1ExpensesPOST,
+		// handler.V1ExpensesPUT,
+		// handler.V1ExpensesPATCH,
+		// handler.V1ExpensesDELETE,
 	}
 
 	for _, r := range routes {
@@ -42,7 +42,7 @@ func Init(e *echo.Echo) {
 	}
 }
 
-func register(g *echo.Group, wr *contexts.WebRoute) {
+func register(g *echo.Group, wr Routes) {
 	switch wr.Method {
 	case "GET":
 		g.GET(wr.Path, wr.Handler)

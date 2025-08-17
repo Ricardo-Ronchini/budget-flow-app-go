@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/ricardo-ronchini/budget-flow-app-go/db"
 )
 
 var jwtSecret = []byte("sua-chave-secreta-super-segura") // ideal usar env
@@ -17,6 +19,12 @@ type LoginCredentials struct {
 }
 
 func Login(c echo.Context) error {
+	db, err := db.ConnectDB()
+	if err != nil {
+		log.Fatal("Erro ao conectar no banco:", err)
+	}
+	defer db.Close()
+
 	var creds LoginCredentials
 
 	// Faz o bind do JSON para a struct
