@@ -13,9 +13,6 @@ func Init(e *echo.Echo) {
 	// *** Echo ***
 	c := contexts.NewContext()
 
-	// no auth
-	e.POST("login", handler.Login)
-
 	// add middleware
 	api := e.Group("/api", auth.Middleware)
 
@@ -24,12 +21,16 @@ func Init(e *echo.Echo) {
 	// - Auth
 	// - Level
 
-	// auth's
 	routes := []Routes{
-		c.HandlerWebRoute(handler.V1UserGET),
+		// --> no auth's
+		c.HandlerWebRoute(handler.V1Login),
+
+		// --> auth's
 		// user
+		c.HandlerWebRoute(handler.V1UserGET),
 		// handler.V1UserGET,
-		// // expense
+
+		// expenses
 		// handler.V1ExpensesGET,
 		// handler.V1ExpensesPOST,
 		// handler.V1ExpensesPUT,

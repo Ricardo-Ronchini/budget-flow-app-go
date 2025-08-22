@@ -1,6 +1,7 @@
 package contexts
 
 import (
+	"context"
 	"os"
 
 	"github.com/labstack/echo/v4"
@@ -16,9 +17,10 @@ type Context struct {
 	API      func() *APIClient
 	Logs     func() *Logs
 
-	Host        string
-	APIVersion  string
-	EchoContext echo.Context
+	Host          string
+	APIVersion    string
+	EchoContext   echo.Context
+	SystemContext context.Context
 }
 
 func NewContext() *Context {

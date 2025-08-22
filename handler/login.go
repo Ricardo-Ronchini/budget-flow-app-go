@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
-	"github.com/ricardo-ronchini/budget-flow-app-go/db"
+	"github.com/ricardo-ronchini/budget-flow-app-go/contexts"
+	"github.com/ricardo-ronchini/budget-flow-app-go/service"
 )
 
 var jwtSecret = []byte("sua-chave-secreta-super-segura") // ideal usar env
@@ -18,45 +18,53 @@ type LoginCredentials struct {
 	Password string `json:"password"`
 }
 
-func Login(c echo.Context) error {
-	db, err := db.ConnectDB()
-	if err != nil {
-		log.Fatal("Erro ao conectar no banco:", err)
-	}
-	defer db.Close()
+var V1Login = &contexts.WebRoute{
+	Path:   "/login",
+	Method: contexts.POST,
+	Handler: func(c *contexts.Context) (int, any) {
+		var creds LoginCredentials
 
-	var creds LoginCredentials
+		// Faz o bind do JSON para a struct
+		if err := c.EchoContext.Bind(&creds); err != nil {
+			return http.StatusBadRequest, echo.Map{
+				"erro": "Formato do JSON inválido",
+			}
+		}
 
-	// Faz o bind do JSON para a struct
-	if err := c.Bind(&creds); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"erro": "Formato do JSON inválido",
-		})
-	}
+		userData := service.User{
+			UserName: &creds.UserName,
+			Email:    &creds.Email,
+		}
 
-	// Validação fictícia (exemplo simples) | mock
-	if creds.Email != "teste@exemplo.com" || creds.Password != "123456" {
-		return c.JSON(http.StatusUnauthorized, echo.Map{
-			"erro": "Credenciais inválidas",
-		})
-	}
+		user, err := userData.GetUserForLogin(c, nil)
+		if err != nil {
+			return http.StatusUnauthorized, echo.Map{
+				"error": "unauthorized access",
+			}
+		}
 
-	// Criação do token JWT | mock
-	claims := jwt.MapClaims{
-		"user_id": "abc123",
-		"exp":     time.Now().Add(2 * time.Hour).Unix(),
-	}
+		_ = user
+		// validar se a senha esta valida
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		// Criação do token JWT | mock
+		claims := jwt.MapClaims{
+			"user_id": "abc123",
+			"exp":     time.Now().Add(2 * time.Hour).Unix(),
+		}
 
-	tokenStr, err := token.SignedString(jwtSecret)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"erro": "Erro ao gerar o token",
-		})
-	}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"token": tokenStr,
-	})
+		tokenStr, err := token.SignedString(jwtSecret)
+		if err != nil {
+			return http.StatusInternalServerError, echo.Map{
+				"erro": "Erro ao gerar o token",
+			}
+		}
+
+		resp := echo.Map{
+			"token": tokenStr,
+		}
+
+		return http.StatusOK, c.API().Ok(resp)
+	},
 }
