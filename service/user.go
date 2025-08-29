@@ -7,6 +7,7 @@ import (
 
 	"github.com/ricardo-ronchini/budget-flow-app-go/common"
 	"github.com/ricardo-ronchini/budget-flow-app-go/contexts"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -14,6 +15,7 @@ type User struct {
 	Name       *string   `json:"name"`
 	Email      *string   `json:"email"`
 	UserName   *string   `json:"user_name"`
+	Password   *string   `json:"password"`
 	CreatedAt  time.Time `json:"created_at"`
 	ModifiedAt time.Time `json:"modified_at"`
 }
@@ -113,11 +115,22 @@ func (data *User) CreateUser(ctx *contexts.Context, tx *sql.Tx) error {
 		return fmt.Errorf("transação nao definida")
 	}
 
+	if data.Password == nil {
+		return fmt.Errorf("senha inválida")
+	}
+
+	bytes, err := bcrypt.GenerateFromPassword([]byte(*data.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("erro ao gerar senha hash")
+	}
+
+	passwordHash := string(bytes)
+
 	query := `
 		INSERT into users 
-			(user_id, name, email, user_name, created_at, modified_at)
+			(user_id, name, email, user_name, password, created_at, modified_at)
 		VALUES 
-			($1, $2, $3, $4, $5, $6)
+			($1, $2, $3, $4, $5, $6, $7)
 		;
 	`
 
@@ -128,6 +141,7 @@ func (data *User) CreateUser(ctx *contexts.Context, tx *sql.Tx) error {
 		data.Name,
 		data.Email,
 		data.UserName,
+		passwordHash,
 		time.Now(),
 		time.Now(),
 	}

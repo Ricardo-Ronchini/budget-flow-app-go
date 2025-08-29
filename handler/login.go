@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/ricardo-ronchini/budget-flow-app-go/contexts"
 	"github.com/ricardo-ronchini/budget-flow-app-go/service"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var jwtSecret = []byte("sua-chave-secreta-super-segura") // ideal usar env
@@ -43,13 +44,23 @@ var V1Login = &contexts.WebRoute{
 			}
 		}
 
-		_ = user
-		// validar se a senha esta valida
+		if user.Password == nil {
+			return http.StatusInternalServerError, echo.Map{
+				"error": "problema na validação de usuário",
+			}
+		}
+
+		if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(creds.Password)); err != nil {
+			return http.StatusUnauthorized, echo.Map{
+				"error": "Credenciais inválidas",
+			}
+		}
 
 		// Criação do token JWT | mock
 		claims := jwt.MapClaims{
-			"user_id": "abc123",
-			"exp":     time.Now().Add(2 * time.Hour).Unix(),
+			"user_name": user.UserName,
+			"email":     user.Email,
+			"exp":       time.Now().Add(2 * time.Hour).Unix(),
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
