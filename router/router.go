@@ -28,14 +28,14 @@ func Init(e *echo.Echo) {
 		// --> auth's
 		// user
 		c.HandlerWebRoute(handler.V1UserGET),
-		// handler.V1UserGET,
-
-		// expenses
-		// handler.V1ExpensesGET,
-		// handler.V1ExpensesPOST,
-		// handler.V1ExpensesPUT,
-		// handler.V1ExpensesPATCH,
-		// handler.V1ExpensesDELETE,
+		c.HandlerWebRoute(handler.V1UserPOST),
+		// expense
+		c.HandlerWebRoute(handler.V1ExpensesGET),
+		c.HandlerWebRoute(handler.V1EspensesByIDGET),
+		c.HandlerWebRoute(handler.V1ExpensesPOST),
+		c.HandlerWebRoute(handler.V1ExpensesPUT),
+		c.HandlerWebRoute(handler.V1ExpensesPATCH),
+		c.HandlerWebRoute(handler.V1ExpensesDELETE),
 	}
 
 	for _, r := range routes {

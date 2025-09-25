@@ -37,11 +37,16 @@ var V1UserPOST = &contexts.WebRoute{
 
 		tx, err := db.Begin()
 		if err != nil {
-			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
+			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
 		}
 
 		if err := user.CreateUser(c, tx); err != nil {
+			tx.Rollback()
 			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
+		}
+
+		if err = tx.Commit(); err != nil {
+			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
 		}
 
 		return http.StatusOK, c.API().Ok(user)

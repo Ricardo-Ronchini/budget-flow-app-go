@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ricardo-ronchini/budget-flow-app-go/contexts"
+	"github.com/ricardo-ronchini/budget-flow-app-go/service"
 )
 
 const exepensePath string = "/expenses"
@@ -15,10 +16,12 @@ var V1ExpensesGET = &contexts.WebRoute{
 		db := c.Database().Connect()
 		defer db.Close()
 
-		// Chama o serviço (simulado)
-		expenses := []string{"Aluguel", "Comida"}
+		result, err := service.Expenses(db)
+		if err != nil {
+			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
+		}
 
-		return http.StatusOK, expenses
+		return http.StatusOK, result
 	},
 }
 
@@ -27,11 +30,20 @@ var V1EspensesByIDGET = &contexts.WebRoute{
 	Method: contexts.GET,
 	Handler: func(c *contexts.Context) (int, any) {
 		expenseID := c.EchoContext.QueryParam("expense_id")
-		expenses := []string{"Aluguel", "Comida"}
 
-		_ = expenseID
+		data := service.Expense{
+			ExpenseID: expenseID,
+		}
 
-		return http.StatusOK, expenses
+		db := c.Database().Connect()
+		defer db.Close()
+
+		result, err := data.ExpenseByID(db)
+		if err != nil {
+			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
+		}
+
+		return http.StatusOK, result
 	},
 }
 
@@ -39,6 +51,23 @@ var V1ExpensesPOST = &contexts.WebRoute{
 	Path:   exepensePath,
 	Method: contexts.POST,
 	Handler: func(c *contexts.Context) (int, any) {
+		data := service.Expense{}
+
+		c.EchoContext.Bind(&data)
+
+		tx, err := c.Database().Connect().Begin()
+		if err != nil {
+			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
+		}
+
+		if err = data.CreateExpense(tx); err != nil {
+			tx.Rollback()
+			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
+		}
+
+		if err = tx.Commit(); err != nil {
+			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
+		}
 
 		return http.StatusOK, nil
 	},

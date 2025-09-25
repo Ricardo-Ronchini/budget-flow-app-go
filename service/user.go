@@ -25,7 +25,7 @@ const (
 	nameMinChar int = 4
 )
 
-func Validation(data *User) error {
+func (data *User) Validation() error {
 	if data == nil {
 		return fmt.Errorf("empty data")
 	}
@@ -56,7 +56,7 @@ func Validation(data *User) error {
 }
 
 func (data *User) GetUserForLogin(ctx *contexts.Context, tx *sql.DB) (*User, error) {
-	if err := Validation(data); err != nil {
+	if err := data.Validation(); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +107,7 @@ func (data *User) GetUserForLogin(ctx *contexts.Context, tx *sql.DB) (*User, err
 }
 
 func (data *User) CreateUser(ctx *contexts.Context, tx *sql.Tx) error {
-	if err := Validation(data); err != nil {
+	if err := data.Validation(); err != nil {
 		return err
 	}
 

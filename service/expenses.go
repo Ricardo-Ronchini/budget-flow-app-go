@@ -1,12 +1,13 @@
 package service
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"time"
 )
 
 type Expense struct {
+	ExpenseID string    `json:"expense_id"`
 	Name      string    `json:"name"`
 	Value     float32   `json:"value"`
 	Date      time.Time `json:"date"`
@@ -14,10 +15,18 @@ type Expense struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (s *Services) Expenses(ctx context.Context) (*[]Expense, error) {
+func (data *Expense) Validation() error {
+	if data.ExpenseID == "" {
+		return fmt.Errorf("expense id cannot be empty")
+	}
+
+	return nil
+}
+
+func Expenses(db *sql.DB) (*[]Expense, error) {
 	query := `SELECT name, value, date, user_id, created_at FROM expense`
 
-	rows, err := s.DB.QueryContext(ctx, query)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -38,14 +47,22 @@ func (s *Services) Expenses(ctx context.Context) (*[]Expense, error) {
 	return &expenses, nil
 }
 
-func (s *Services) ExpenseByID(ctx context.Context, expenseID string) (*Expense, error) {
-	if expenseID == "" {
-		return nil, fmt.Errorf("expense id cannot be empty")
+func (data *Expense) ExpenseByID(db *sql.DB) (*Expense, error) {
+	if err := data.Validation(); err != nil {
+		return nil, err
 	}
 
-	query := fmt.Sprintf(`SELECT name, value, date, user_id, created_at FROM expense WHERE expense_id = %s`, expenseID)
+	query := `
+		SELECT 
+			name, value, date, user_id, created_at 
+		FROM 
+			expense 
+		WHERE 
+			expense_id = $1
+		;
+	`
 
-	rows, err := s.DB.QueryContext(ctx, query)
+	rows, err := db.Query(query, data.ExpenseID)
 	if err != nil {
 		return nil, err
 	}
@@ -53,25 +70,37 @@ func (s *Services) ExpenseByID(ctx context.Context, expenseID string) (*Expense,
 
 	var expense Expense
 
-	if err := rows.Scan(&expense.Name, &expense.Value, &expense.Date, &expense.UserID, &expense.CreatedAt); err != nil {
+	if err := rows.Scan(
+		&expense.Name,
+		&expense.Value,
+		&expense.Date,
+		&expense.UserID,
+		&expense.CreatedAt,
+	); err != nil {
 		return nil, err
 	}
 
 	return &expense, nil
 }
 
-func (s *Services) CreateExpense(ctx context.Context, expenseData Expense) error {
-	query := `INSERT INTO expense (name, value, date, user_id, created_at) VALUES ($1, $2, $3, $4, $5)`
+func (data *Expense) CreateExpense(tx *sql.Tx) error {
+	query := `
+		INSERT INTO expense 
+			(name, value, date, user_id, created_at) 
+		VALUES 
+			($1, $2, $3, $4, $5)
+		;
+	`
 
 	args := []any{
-		expenseData.Name,
-		expenseData.Value,
-		expenseData.Date,
-		expenseData.UserID,
+		data.Name,
+		data.Value,
+		data.Date,
+		data.UserID,
 		time.Now(),
 	}
 
-	_, err := s.DB.ExecContext(ctx, query, args...)
+	_, err := tx.Exec(query, args...)
 
 	return err
 }
