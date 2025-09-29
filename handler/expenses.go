@@ -74,18 +74,27 @@ var V1ExpensesPOST = &contexts.WebRoute{
 }
 
 var V1ExpensesPUT = &contexts.WebRoute{
-	Path:   exepensePath,
+	Path:   exepensePath + "/:expense_id",
 	Method: contexts.PUT,
 	Handler: func(c *contexts.Context) (int, any) {
+		expenseID := c.EchoContext.QueryParam("expense_id")
+		data := service.Expense{ExpenseID: expenseID}
 
-		return http.StatusOK, nil
-	},
-}
+		c.EchoContext.Bind(&data)
 
-var V1ExpensesPATCH = &contexts.WebRoute{
-	Path:   exepensePath,
-	Method: contexts.PATCH,
-	Handler: func(c *contexts.Context) (int, any) {
+		tx, err := c.Database().Connect().Begin()
+		if err != nil {
+			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
+		}
+
+		if err := data.UpdateExpense(tx); err != nil {
+			tx.Rollback()
+			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
+		}
+
+		if err = tx.Commit(); err != nil {
+			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
+		}
 
 		return http.StatusOK, nil
 	},
@@ -95,6 +104,22 @@ var V1ExpensesDELETE = &contexts.WebRoute{
 	Path:   exepensePath,
 	Method: contexts.DELETE,
 	Handler: func(c *contexts.Context) (int, any) {
+		expenseID := c.EchoContext.QueryParam("expense_id")
+
+		tx, err := c.Database().Connect().Begin()
+		if err != nil {
+			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
+
+		}
+
+		if err := service.DeleteExpense(expenseID, tx); err != nil {
+			tx.Rollback()
+			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
+		}
+
+		if err = tx.Commit(); err != nil {
+			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
+		}
 
 		return http.StatusOK, nil
 	},

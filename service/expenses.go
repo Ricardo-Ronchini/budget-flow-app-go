@@ -86,9 +86,9 @@ func (data *Expense) ExpenseByID(db *sql.DB) (*Expense, error) {
 func (data *Expense) CreateExpense(tx *sql.Tx) error {
 	query := `
 		INSERT INTO expense 
-			(name, value, date, user_id, created_at) 
+			(expense_id, name, value, date, user_id, created_at, updated_at) 
 		VALUES 
-			($1, $2, $3, $4, $5)
+			($1, $2, $3, $4, $5, $6)
 		;
 	`
 
@@ -98,9 +98,54 @@ func (data *Expense) CreateExpense(tx *sql.Tx) error {
 		data.Date,
 		data.UserID,
 		time.Now(),
+		time.Now(),
 	}
 
 	_, err := tx.Exec(query, args...)
+
+	return err
+}
+
+func (data *Expense) UpdateExpense(tx *sql.Tx) error {
+	if err := data.Validation(); err != nil {
+		return err
+	}
+
+	query := `
+		UPDATE expense
+		SET
+			name = $2,
+			value = $3,
+			updated_at = $4,
+		WHERE
+			expense_id = $1
+		;
+	`
+
+	args := []any{
+		data.Name,
+		data.Value,
+		time.Now(),
+	}
+
+	_, err := tx.Exec(query, args...)
+
+	return err
+}
+
+func DeleteExpense(expenseID string, tx *sql.Tx) error {
+	if expenseID == "" {
+		return fmt.Errorf("expense id cannot be empty")
+	}
+
+	query := `
+		DELETE expense
+		WHERE
+			expense_id = $1
+		;
+	`
+
+	_, err := tx.Exec(query, expenseID)
 
 	return err
 }
