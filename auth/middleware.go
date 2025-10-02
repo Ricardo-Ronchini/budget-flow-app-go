@@ -6,6 +6,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/ricardo-ronchini/budget-flow-app-go/common"
 )
 
 var jwtSecret = []byte("sua-chave-secreta-super-segura")
@@ -45,4 +47,20 @@ func Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		return next(c)
 	}
+}
+
+func ConfigCORS() echo.MiddlewareFunc {
+	return middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: common.GetEnvArray("ALLOWED_ORIGINS", []string{}),
+		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.PATCH, echo.DELETE},
+		AllowHeaders: []string{
+			echo.HeaderOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderAuthorization,
+			"X-API-Key",
+		},
+		AllowCredentials: true,
+		MaxAge:           86400, // 24 hours
+	})
 }

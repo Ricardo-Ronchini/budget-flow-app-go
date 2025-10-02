@@ -13,19 +13,19 @@ func Init(e *echo.Echo) {
 	// *** Echo ***
 	c := contexts.NewContext()
 
-	// add middleware
-	api := e.Group("/api", auth.Middleware)
+	e.Use(auth.ConfigCORS())
+
+	v1 := e.Group("/v1")
+	api := v1.Group("/api", auth.Middleware)
 
 	// middleware
-	// - CORS
-	// - Auth
 	// - Level
 
-	routes := []Routes{
-		// --> no auth's
+	noAuthRoutes := []Routes{
 		c.HandlerWebRoute(handler.V1Login),
+	}
 
-		// --> auth's
+	authRoutes := []Routes{
 		// user
 		c.HandlerWebRoute(handler.V1UserGET),
 		c.HandlerWebRoute(handler.V1UserPOST),
@@ -34,11 +34,14 @@ func Init(e *echo.Echo) {
 		c.HandlerWebRoute(handler.V1EspensesByIDGET),
 		c.HandlerWebRoute(handler.V1ExpensesPOST),
 		c.HandlerWebRoute(handler.V1ExpensesPUT),
-		c.HandlerWebRoute(handler.V1ExpensesPATCH),
 		c.HandlerWebRoute(handler.V1ExpensesDELETE),
 	}
 
-	for _, r := range routes {
+	for _, r := range noAuthRoutes {
+		register(v1, r)
+	}
+
+	for _, r := range authRoutes {
 		register(api, r)
 	}
 }
