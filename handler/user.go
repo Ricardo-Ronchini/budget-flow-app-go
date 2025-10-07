@@ -23,6 +23,7 @@ var V1UserGET = &contexts.WebRoute{
 
 		return http.StatusOK, c.API().Ok(response)
 	},
+	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel, contexts.BasicLevel},
 }
 
 var V1UserPOST = &contexts.WebRoute{
@@ -51,4 +52,5 @@ var V1UserPOST = &contexts.WebRoute{
 
 		return http.StatusOK, c.API().Ok(user)
 	},
+	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel},
 }

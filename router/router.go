@@ -18,9 +18,6 @@ func Init(e *echo.Echo) {
 	v1 := e.Group("/v1")
 	api := v1.Group("/api", auth.Middleware)
 
-	// middleware
-	// - Level
-
 	noAuthRoutes := []Routes{
 		c.HandlerWebRoute(handler.V1Login),
 	}

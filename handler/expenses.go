@@ -23,6 +23,7 @@ var V1ExpensesGET = &contexts.WebRoute{
 
 		return http.StatusOK, result
 	},
+	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel, contexts.BasicLevel},
 }
 
 var V1EspensesByIDGET = &contexts.WebRoute{
@@ -45,6 +46,7 @@ var V1EspensesByIDGET = &contexts.WebRoute{
 
 		return http.StatusOK, result
 	},
+	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel, contexts.BasicLevel},
 }
 
 var V1ExpensesPOST = &contexts.WebRoute{
@@ -71,6 +73,7 @@ var V1ExpensesPOST = &contexts.WebRoute{
 
 		return http.StatusOK, nil
 	},
+	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel},
 }
 
 var V1ExpensesPUT = &contexts.WebRoute{
@@ -98,6 +101,7 @@ var V1ExpensesPUT = &contexts.WebRoute{
 
 		return http.StatusOK, nil
 	},
+	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel},
 }
 
 var V1ExpensesDELETE = &contexts.WebRoute{
@@ -123,4 +127,5 @@ var V1ExpensesDELETE = &contexts.WebRoute{
 
 		return http.StatusOK, nil
 	},
+	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel},
 }
