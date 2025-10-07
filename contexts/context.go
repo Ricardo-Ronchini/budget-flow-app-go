@@ -23,5 +23,6 @@ func NewContext() *Context {
 	return &Context{
 		Host:       common.GetEnv("HOST", "localhost:8080"),
 		APIVersion: common.GetEnv("API_VERSION", "V.0"),
+		Logs:       NewLogs,
 	}
 }

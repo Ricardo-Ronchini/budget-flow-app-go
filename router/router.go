@@ -13,6 +13,8 @@ func Init(e *echo.Echo) {
 	// *** Echo ***
 	c := contexts.NewContext()
 
+	c.Logs().Info("Init API services")
+
 	e.Use(auth.ConfigCORS())
 
 	v1 := e.Group("/v1")
@@ -33,6 +35,8 @@ func Init(e *echo.Echo) {
 		c.HandlerWebRoute(handler.V1ExpensesPUT),
 		c.HandlerWebRoute(handler.V1ExpensesDELETE),
 	}
+
+	c.Logs().Info("Recording routes...")
 
 	for _, r := range noAuthRoutes {
 		register(v1, r)
