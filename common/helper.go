@@ -1,6 +1,7 @@
 package common
 
 import (
+	"math"
 	"os"
 	"strings"
 )
@@ -27,4 +28,9 @@ func GetEnvArray(key string, defaultValue []string) []string {
 	}
 
 	return items
+}
+
+func RoundTo(n float32, places int) float32 {
+	pow := math.Pow(10, float64(places))
+	return float32(math.Round(float64(n)*pow) / pow)
 }

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 )
@@ -13,6 +12,7 @@ type Expense struct {
 	Date      time.Time `json:"date"`
 	UserID    string    `json:"user_id"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (data *Expense) Validation() error {
@@ -23,10 +23,12 @@ func (data *Expense) Validation() error {
 	return nil
 }
 
-func Expenses(db *sql.DB) (*[]Expense, error) {
-	query := `SELECT name, value, date, user_id, created_at FROM expense`
+func Expenses(db DB) (*[]Expense, error) {
+	if db == nil {
+		return nil, fmt.Errorf("connection not established")
+	}
 
-	rows, err := db.Query(query)
+	rows, err := db.Query(GetAllExpensesQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +39,15 @@ func Expenses(db *sql.DB) (*[]Expense, error) {
 	for rows.Next() {
 		var expense Expense
 
-		if err := rows.Scan(&expense.Name, &expense.Value, &expense.Date, &expense.UserID, &expense.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&expense.ExpenseID,
+			&expense.Name,
+			&expense.Value,
+			&expense.Date,
+			&expense.UserID,
+			&expense.CreatedAt,
+			&expense.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 
@@ -47,35 +57,27 @@ func Expenses(db *sql.DB) (*[]Expense, error) {
 	return &expenses, nil
 }
 
-func (data *Expense) ExpenseByID(db *sql.DB) (*Expense, error) {
+func (data *Expense) ExpenseByID(db DB) (*Expense, error) {
+	if db == nil {
+		return nil, fmt.Errorf("connection not established")
+	}
+
 	if err := data.Validation(); err != nil {
 		return nil, err
 	}
 
-	query := `
-		SELECT 
-			name, value, date, user_id, created_at 
-		FROM 
-			expense 
-		WHERE 
-			expense_id = $1
-		;
-	`
-
-	rows, err := db.Query(query, data.ExpenseID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+	rows := db.QueryRow(GetExpenseByIDQuery, data.ExpenseID)
 
 	var expense Expense
 
 	if err := rows.Scan(
+		&expense.ExpenseID,
 		&expense.Name,
 		&expense.Value,
 		&expense.Date,
 		&expense.UserID,
 		&expense.CreatedAt,
+		&expense.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -83,69 +85,59 @@ func (data *Expense) ExpenseByID(db *sql.DB) (*Expense, error) {
 	return &expense, nil
 }
 
-func (data *Expense) CreateExpense(tx *sql.Tx) error {
-	query := `
-		INSERT INTO expense 
-			(expense_id, name, value, date, user_id, created_at, updated_at) 
-		VALUES 
-			($1, $2, $3, $4, $5, $6)
-		;
-	`
+func (data *Expense) CreateExpense(db DB) error {
+	if db == nil {
+		return fmt.Errorf("connection not established")
+	}
 
 	args := []any{
+		data.ExpenseID,
 		data.Name,
 		data.Value,
 		data.Date,
 		data.UserID,
-		time.Now(),
-		time.Now(),
+		data.CreatedAt,
+		data.UpdatedAt,
 	}
 
-	_, err := tx.Exec(query, args...)
+	_, err := db.Exec(CreateExpenseQuery, args...)
 
 	return err
 }
 
-func (data *Expense) UpdateExpense(tx *sql.Tx) error {
+func (data *Expense) UpdateExpense(db DB) error {
+	if db == nil {
+		return fmt.Errorf("connection not established")
+	}
+
 	if err := data.Validation(); err != nil {
 		return err
 	}
 
-	query := `
-		UPDATE expense
-		SET
-			name = $2,
-			value = $3,
-			updated_at = $4,
-		WHERE
-			expense_id = $1
-		;
-	`
-
 	args := []any{
+		data.ExpenseID,
 		data.Name,
 		data.Value,
-		time.Now(),
+		data.Date,
+		data.UserID,
+		data.UpdatedAt,
 	}
 
-	_, err := tx.Exec(query, args...)
+	_, err := db.Exec(UpdateExpenseQuery, args...)
 
 	return err
 }
 
-func DeleteExpense(expenseID string, tx *sql.Tx) error {
+func DeleteExpense(expenseID string, db DB) error {
+	if db == nil {
+		return fmt.Errorf("connection not established")
+	}
+
 	if expenseID == "" {
 		return fmt.Errorf("expense id cannot be empty")
 	}
 
-	query := `
-		DELETE expense
-		WHERE
-			expense_id = $1
-		;
-	`
-
-	_, err := tx.Exec(query, expenseID)
+	_, err := db.Exec(DeleteExpenseQuery, expenseID)
 
 	return err
 }

@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS expenses (
     value numeric NOT NULL,
     date TIMESTAMP,
     created_at TIMESTAMP,
-    modified_at TIMESTAMP
+    updated_at TIMESTAMP
 );

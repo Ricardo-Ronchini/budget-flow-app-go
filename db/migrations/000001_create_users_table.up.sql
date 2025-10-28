@@ -3,5 +3,5 @@ CREATE TABLE IF NOT EXISTS users (
     name text NOT NULL,
     email text UNIQUE NOT NULL,
     created_at TIMESTAMP,
-    modified_at TIMESTAMP
+    updated_at TIMESTAMP
 );

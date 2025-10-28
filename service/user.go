@@ -1,7 +1,6 @@
 package service
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -11,13 +10,13 @@ import (
 )
 
 type User struct {
-	UserID     string    `json:"user_id"`
-	Name       *string   `json:"name"`
-	Email      *string   `json:"email"`
-	UserName   *string   `json:"user_name"`
-	Password   *string   `json:"password"`
-	CreatedAt  time.Time `json:"created_at"`
-	ModifiedAt time.Time `json:"modified_at"`
+	UserID    string    `json:"user_id"`
+	Name      *string   `json:"name"`
+	Email     *string   `json:"email"`
+	UserName  *string   `json:"user_name"`
+	Password  *string   `json:"password"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 const (
@@ -55,33 +54,20 @@ func (data *User) Validation() error {
 	return nil
 }
 
-func (data *User) GetUserForLogin(ctx *contexts.Context, tx *sql.DB) (*User, error) {
+func (data *User) GetUserForLogin(ctx *contexts.Context, db DB) (*User, error) {
+	if db == nil {
+		return nil, fmt.Errorf("connection not established")
+	}
+
 	if err := data.Validation(); err != nil {
 		return nil, err
 	}
-
-	if tx == nil {
-		tx = ctx.Database().Connect()
-	}
-	defer tx.Close()
-
-	query := `
-		SELECT 
-			user_id, name, email, user_name, created_at, modified_at
-		FROM 
-			users
-		WHERE
-			user_name = $1
-		OR
-			email = $1
-		;
-	`
 
 	args := []any{
 		data.UserName,
 	}
 
-	rows, err := tx.Query(query, args)
+	rows, err := db.Query(GetUserForLoginQuery, args)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +84,7 @@ func (data *User) GetUserForLogin(ctx *contexts.Context, tx *sql.DB) (*User, err
 		&user.Email,
 		&user.UserName,
 		&user.CreatedAt,
-		&user.ModifiedAt,
+		&user.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -106,13 +92,13 @@ func (data *User) GetUserForLogin(ctx *contexts.Context, tx *sql.DB) (*User, err
 	return &user, nil
 }
 
-func (data *User) CreateUser(ctx *contexts.Context, tx *sql.Tx) error {
-	if err := data.Validation(); err != nil {
-		return err
+func (data *User) CreateUser(ctx *contexts.Context, db DB) error {
+	if db == nil {
+		return fmt.Errorf("connection not established")
 	}
 
-	if tx == nil {
-		return fmt.Errorf("transação nao definida")
+	if err := data.Validation(); err != nil {
+		return err
 	}
 
 	if data.Password == nil {
@@ -126,14 +112,6 @@ func (data *User) CreateUser(ctx *contexts.Context, tx *sql.Tx) error {
 
 	passwordHash := string(bytes)
 
-	query := `
-		INSERT into users 
-			(user_id, name, email, user_name, password, created_at, modified_at)
-		VALUES 
-			($1, $2, $3, $4, $5, $6, $7)
-		;
-	`
-
 	userID := common.GenerateCustomGuideID()
 
 	args := []any{
@@ -146,39 +124,25 @@ func (data *User) CreateUser(ctx *contexts.Context, tx *sql.Tx) error {
 		time.Now(),
 	}
 
-	if _, err := tx.Exec(query, args...); err != nil {
+	if _, err := db.Exec(CreateUserQuery, args...); err != nil {
 		return fmt.Errorf("erro ao inserir usuário")
 	}
 
 	return nil
 }
 
-func (data *User) GetUserByID(ctx *contexts.Context, tx *sql.DB) (*User, error) {
-	if tx == nil {
-		tx = ctx.Database().Connect()
+func (data *User) GetUserByID(ctx *contexts.Context, db DB) (*User, error) {
+	if db == nil {
+		return nil, fmt.Errorf("connection not established")
 	}
-	defer tx.Close()
-
-	query := `
-		SELECT 
-			user_id, name, email, user_name, created_at, modified_at
-		FROM 
-			users
-		WHERE
-			user_id = $1
-		;
-	`
 
 	args := []any{
-		data.UserName,
+		data.UserID,
 	}
 
-	rows, err := tx.Query(query, args)
-	if err != nil {
-		return nil, err
-	}
+	rows := db.QueryRow(GetUserByIDQuery, args...)
 
-	if rows.Err() != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
@@ -190,7 +154,7 @@ func (data *User) GetUserByID(ctx *contexts.Context, tx *sql.DB) (*User, error) 
 		&user.Email,
 		&user.UserName,
 		&user.CreatedAt,
-		&user.ModifiedAt,
+		&user.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
