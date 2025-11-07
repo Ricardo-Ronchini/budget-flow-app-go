@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: budget_postgres_local
+    restart: no
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: budget_app
+    ports:
+      - "5435:5432"
+    volumes:
+      - budget_app_data:/var/lib/postgresql/data
+
+volumes:
+  budget_app_data:

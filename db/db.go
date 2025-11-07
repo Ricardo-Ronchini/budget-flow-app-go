@@ -20,6 +20,18 @@ type DBConnection struct {
 	SSL_MODE string
 }
 
+func ContextDBURL() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+		os.Getenv("SSL_MODE"),
+	)
+}
+
 func ContextDB() string {
 	dbContext := DBConnection{
 		HOST:     os.Getenv("DB_HOST"),
@@ -48,8 +60,6 @@ func (c *Database) Connect() *sql.DB {
 	if err = db.Ping(); err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("ping", db.Ping())
 
 	return db
 }

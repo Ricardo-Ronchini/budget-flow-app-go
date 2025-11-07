@@ -11,11 +11,14 @@ import (
 func main() {
 	log.Println("Servidor iniciado em http://localhost:8080")
 
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("⚠️  Não foi possível carregar .env, usando variáveis do sistema")
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("⚠️  Não foi possível carregar .env, usando variáveis do sistema, err: %v", err)
 	}
 
 	e := echo.New()
 	router.Init(e)
-	e.Logger.Fatal(e.Start(":8080"))
+
+	if err := e.Start(":8080"); err != nil {
+		log.Fatalf("Erro ao iniciar servico de API. Err: %v", err)
+	}
 }
