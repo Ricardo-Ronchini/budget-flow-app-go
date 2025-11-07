@@ -22,12 +22,12 @@ func main() {
 	}
 
 	if err := godotenv.Load(".env"); err != nil {
-		log.Println("⚠️  Não foi possível carregar .env, usando variáveis do sistema")
+		log.Panic("⚠️  Não foi possível carregar .env, usando variáveis do sistema")
 	}
 
 	m, err := migrate.New(
 		"file://db/migrations",
-		"postgres://"+db.ContextDB(),
+		db.ContextDBURL(),
 	)
 	if err != nil {
 		log.Fatal("Erro ao iniciar migrate: ", err)
