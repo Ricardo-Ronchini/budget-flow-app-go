@@ -38,9 +38,19 @@ type WebRoute struct {
 	Handler         func(c *Context) (int, any)
 	Middleware      []echo.MiddlewareFunc
 	PermissionLevel []PermissionName
+	Authenticate    bool
 }
 
 func (ctx *Context) CheckPermissionLevel(w *WebRoute) bool {
+	// bypass for endpoints without authentication
+	if !w.Authenticate {
+		return true
+	}
+
+	if len(w.PermissionLevel) < 1 {
+		return false
+	}
+
 	return slices.Contains(w.PermissionLevel, PermissionName(ctx.API().Session().UserLevel))
 }
 
@@ -50,6 +60,8 @@ func (ctx *Context) HandlerWebRoute(w *WebRoute) *EchoHandler {
 		Method: w.Method,
 		Handler: func(ec echo.Context) error {
 			ctx.EchoContext = ec
+
+			ctx.Logs().Info("[HANDLER WEB ROUTE] check permission level")
 
 			if allowed := ctx.CheckPermissionLevel(w); !allowed {
 				return ec.JSON(http.StatusForbidden, map[string]string{

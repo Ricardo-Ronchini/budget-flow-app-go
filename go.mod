@@ -3,6 +3,7 @@ module github.com/ricardo-ronchini/budget-flow-app-go
 go 1.23.4
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
@@ -13,7 +14,6 @@ require (
 )
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect

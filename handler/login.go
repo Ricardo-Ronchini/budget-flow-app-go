@@ -14,7 +14,7 @@ import (
 var jwtSecret = []byte("sua-chave-secreta-super-segura") // ideal usar env
 
 type LoginCredentials struct {
-	UserName string `json:"user_name"`
+	UserName string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -23,44 +23,49 @@ var V1Login = &contexts.WebRoute{
 	Path:   "/login",
 	Method: contexts.POST,
 	Handler: func(c *contexts.Context) (int, any) {
+		c.Logs().Info("[LOGIN] initiating a request to access the services")
+
 		var creds LoginCredentials
 
-		// Faz o bind do JSON para a struct
 		if err := c.EchoContext.Bind(&creds); err != nil {
 			return http.StatusBadRequest, echo.Map{
-				"erro": "Formato do JSON inválido",
+				"erro": "invalid JSON format",
 			}
 		}
 
-		userData := service.User{
+		userData := service.LoginUser{
 			UserName: &creds.UserName,
-			Email:    &creds.Email,
+			Password: &creds.Password,
 		}
 
-		user, err := userData.GetUserForLogin(c, nil)
+		db := c.Database().Connect()
+		defer db.Close()
+
+		user, err := userData.GetUserForLogin(c, db)
 		if err != nil {
 			return http.StatusUnauthorized, echo.Map{
-				"error": "unauthorized access",
+				"error":   "unauthorized access",
+				"message": err.Error(),
 			}
 		}
 
-		if user.Password == nil {
+		if user.PasswordHash == nil {
 			return http.StatusInternalServerError, echo.Map{
-				"error": "problema na validação de usuário",
+				"error": "user validation was not possible",
 			}
 		}
 
-		if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(creds.Password)); err != nil {
+		if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(creds.Password)); err != nil {
 			return http.StatusUnauthorized, echo.Map{
-				"error": "Credenciais inválidas",
+				"error": "invalid credentials",
 			}
 		}
 
 		// Criação do token JWT | mock
 		claims := jwt.MapClaims{
-			"user_name": user.UserName,
-			"email":     user.Email,
-			"exp":       time.Now().Add(2 * time.Hour).Unix(),
+			"username": *user.UserName,
+			"email":    *user.Email,
+			"exp":      time.Now().Add(2 * time.Hour).Unix(),
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -72,10 +77,13 @@ var V1Login = &contexts.WebRoute{
 			}
 		}
 
+		c.Logs().Logger.Debug("token str: ", tokenStr)
+
 		resp := echo.Map{
 			"token": tokenStr,
 		}
 
 		return http.StatusOK, c.API().Ok(resp)
 	},
+	Authenticate: false,
 }

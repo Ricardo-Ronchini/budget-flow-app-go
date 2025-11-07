@@ -13,10 +13,13 @@ var V1UserGET = &contexts.WebRoute{
 	Path:   userPath + "/:user_id",
 	Method: contexts.GET,
 	Handler: func(c *contexts.Context) (int, any) {
-		userID := c.EchoContext.QueryParam("user_id")
+		userID := c.EchoContext.Param("user_id")
 		user := service.User{UserID: userID}
 
-		response, err := user.GetUserByID(c, nil)
+		db := c.Database().Connect()
+		defer db.Close()
+
+		response, err := user.GetUserByID(c, db)
 		if err != nil {
 			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
 		}

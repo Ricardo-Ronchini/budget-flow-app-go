@@ -10,13 +10,20 @@ import (
 )
 
 type User struct {
-	UserID    string    `json:"user_id"`
-	Name      *string   `json:"name"`
-	Email     *string   `json:"email"`
-	UserName  *string   `json:"user_name"`
-	Password  *string   `json:"password"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	UserID       string    `json:"user_id"`
+	Name         *string   `json:"name"`
+	Email        *string   `json:"email"`
+	UserName     *string   `json:"username"`
+	PasswordHash *string   `json:"password_hash"`
+	Password     *string   `json:"password"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type LoginUser struct {
+	UserName *string `json:"username"`
+	Email    *string `json:"email"`
+	Password *string `json:"password"`
 }
 
 const (
@@ -54,12 +61,26 @@ func (data *User) Validation() error {
 	return nil
 }
 
-func (data *User) GetUserForLogin(ctx *contexts.Context, db DB) (*User, error) {
+func (data *LoginUser) LoginValidation() error {
+	if data == nil {
+		return fmt.Errorf("empty data")
+	}
+
+	if data.UserName != nil && *data.UserName == "" {
+		return fmt.Errorf("invalid username")
+	}
+
+	return nil
+}
+
+func (data *LoginUser) GetUserForLogin(ctx *contexts.Context, db DB) (*User, error) {
+	ctx.Logs().Logger.Debug("[GET USER LOGIN] find user to login: ", *data.UserName, ":", *data.Password)
+
 	if db == nil {
 		return nil, fmt.Errorf("connection not established")
 	}
 
-	if err := data.Validation(); err != nil {
+	if err := data.LoginValidation(); err != nil {
 		return nil, err
 	}
 
@@ -67,25 +88,20 @@ func (data *User) GetUserForLogin(ctx *contexts.Context, db DB) (*User, error) {
 		data.UserName,
 	}
 
-	rows, err := db.Query(GetUserForLoginQuery, args)
-	if err != nil {
-		return nil, err
-	}
-
-	if rows.Err() != nil {
-		return nil, err
-	}
+	row := db.QueryRow(GetUserForLoginQuery, args...)
 
 	var user User
 
-	if err := rows.Scan(
+	if err := row.Scan(
 		&user.UserID,
 		&user.Name,
 		&user.Email,
 		&user.UserName,
+		&user.PasswordHash,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	); err != nil {
+		ctx.Logs().Logger.Debug("error parsing user: ", err)
 		return nil, err
 	}
 
@@ -97,17 +113,19 @@ func (data *User) CreateUser(ctx *contexts.Context, db DB) error {
 		return fmt.Errorf("connection not established")
 	}
 
+	ctx.Logs().Logger.Debug("check validations to create user")
+
 	if err := data.Validation(); err != nil {
 		return err
 	}
 
 	if data.Password == nil {
-		return fmt.Errorf("senha inválida")
+		return fmt.Errorf("missing password content")
 	}
 
 	bytes, err := bcrypt.GenerateFromPassword([]byte(*data.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("erro ao gerar senha hash")
+		return fmt.Errorf("error generating hash password")
 	}
 
 	passwordHash := string(bytes)
@@ -125,7 +143,7 @@ func (data *User) CreateUser(ctx *contexts.Context, db DB) error {
 	}
 
 	if _, err := db.Exec(CreateUserQuery, args...); err != nil {
-		return fmt.Errorf("erro ao inserir usuário")
+		return fmt.Errorf("error creating user")
 	}
 
 	return nil
@@ -134,6 +152,10 @@ func (data *User) CreateUser(ctx *contexts.Context, db DB) error {
 func (data *User) GetUserByID(ctx *contexts.Context, db DB) (*User, error) {
 	if db == nil {
 		return nil, fmt.Errorf("connection not established")
+	}
+
+	if data.UserID == "" {
+		return nil, fmt.Errorf("user id cannot be empty")
 	}
 
 	args := []any{
