@@ -1,29 +1,28 @@
 package contexts
 
 type APIClient struct {
-	// Error func(code int, message string) error
 	Response []any
 }
 
 type JSONResponse struct {
-	Success bool
-	Data    Result
+	Success bool   `json:"success"`
+	Data    Result `json:"data"`
 }
 
 type Result struct {
-	Items  any
-	Errors Errors
+	Items  any     `json:"items,omitempty"`
+	Errors *Errors `json:"errors,omitempty"`
 }
 
 type Errors struct {
-	Code    int
-	Message string
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 type Session struct {
-	UserID    string
-	UserLevel string
-	Language  string
+	UserID    string `json:"user_id"`
+	UserLevel string `json:"user_level"`
+	Language  string `json:"language"`
 }
 
 func (c *APIClient) Session() *Session {
@@ -37,7 +36,7 @@ func (a *APIClient) Error(code int, msg string) *JSONResponse {
 	return &JSONResponse{
 		Success: false,
 		Data: Result{
-			Errors: Errors{
+			Errors: &Errors{
 				Code:    code,
 				Message: msg,
 			},
@@ -49,7 +48,8 @@ func (a *APIClient) Ok(data any) *JSONResponse {
 	return &JSONResponse{
 		Success: true,
 		Data: Result{
-			Items: data,
+			Items:  data,
+			Errors: nil,
 		},
 	}
 }

@@ -21,7 +21,7 @@ var V1ExpensesGET = &contexts.WebRoute{
 			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
 		}
 
-		return http.StatusOK, result
+		return http.StatusOK, c.API().Ok(result)
 	},
 	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel, contexts.BasicLevel},
 }
@@ -30,7 +30,7 @@ var V1EspensesByIDGET = &contexts.WebRoute{
 	Path:   exepensePath + "/:expense_id",
 	Method: contexts.GET,
 	Handler: func(c *contexts.Context) (int, any) {
-		expenseID := c.EchoContext.QueryParam("expense_id")
+		expenseID := c.EchoContext.Param("expense_id")
 
 		data := service.Expense{
 			ExpenseID: expenseID,
@@ -44,7 +44,11 @@ var V1EspensesByIDGET = &contexts.WebRoute{
 			return http.StatusBadRequest, c.API().Error(http.StatusBadRequest, err.Error())
 		}
 
-		return http.StatusOK, result
+		if result == nil {
+			return http.StatusNotFound, c.API().Ok(result)
+		}
+
+		return http.StatusOK, c.API().Ok(result)
 	},
 	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel, contexts.BasicLevel},
 }
@@ -71,7 +75,7 @@ var V1ExpensesPOST = &contexts.WebRoute{
 			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
 		}
 
-		return http.StatusOK, nil
+		return http.StatusOK, c.API().Ok(nil)
 	},
 	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel},
 }
@@ -80,10 +84,12 @@ var V1ExpensesPUT = &contexts.WebRoute{
 	Path:   exepensePath + "/:expense_id",
 	Method: contexts.PUT,
 	Handler: func(c *contexts.Context) (int, any) {
-		expenseID := c.EchoContext.QueryParam("expense_id")
+		expenseID := c.EchoContext.Param("expense_id")
 		data := service.Expense{ExpenseID: expenseID}
 
 		c.EchoContext.Bind(&data)
+
+		data.ExpenseID = expenseID
 
 		tx, err := c.Database().Connect().Begin()
 		if err != nil {
@@ -99,16 +105,16 @@ var V1ExpensesPUT = &contexts.WebRoute{
 			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
 		}
 
-		return http.StatusOK, nil
+		return http.StatusOK, c.API().Ok(nil)
 	},
 	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel},
 }
 
 var V1ExpensesDELETE = &contexts.WebRoute{
-	Path:   exepensePath,
+	Path:   exepensePath + "/:expense_id",
 	Method: contexts.DELETE,
 	Handler: func(c *contexts.Context) (int, any) {
-		expenseID := c.EchoContext.QueryParam("expense_id")
+		expenseID := c.EchoContext.Param("expense_id")
 
 		tx, err := c.Database().Connect().Begin()
 		if err != nil {
@@ -125,7 +131,7 @@ var V1ExpensesDELETE = &contexts.WebRoute{
 			return http.StatusInternalServerError, c.API().Error(http.StatusInternalServerError, err.Error())
 		}
 
-		return http.StatusOK, nil
+		return http.StatusOK, c.API().Ok(nil)
 	},
 	PermissionLevel: []contexts.PermissionName{contexts.AdminLevel, contexts.MediumLevel},
 }

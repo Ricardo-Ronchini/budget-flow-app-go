@@ -12,10 +12,6 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-// TODO:
-// limpar o dirty quando for subir uma nova versao (forçar versao anterior)
-// printar o dirty caso esteje marcado
-
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("Passe o comando 'up' ou 'down' para seguir...")
@@ -89,5 +85,4 @@ func main() {
 	default:
 		log.Fatal("Comando não reconhecido")
 	}
-
 }

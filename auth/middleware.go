@@ -23,7 +23,6 @@ func Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		// Valida o token JWT
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrTokenMalformed
@@ -37,7 +36,6 @@ func Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 			})
 		}
 
-		// Extrai o userID e injeta no context da requisição
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			userID, _ := claims["user_id"].(string)
 			ctx := WithUserID(c.Request().Context(), userID)

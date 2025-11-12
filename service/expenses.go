@@ -1,8 +1,12 @@
 package service
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/ricardo-ronchini/budget-flow-app-go/common"
 )
 
 type Expense struct {
@@ -18,6 +22,18 @@ type Expense struct {
 func (data *Expense) Validation() error {
 	if data.ExpenseID == "" {
 		return fmt.Errorf("expense id cannot be empty")
+	}
+
+	return nil
+}
+
+func (data *Expense) CreateValidation() error {
+	if data.Name == "" {
+		return fmt.Errorf("expense name cannot be empty")
+	}
+
+	if data.UserID == "" {
+		return fmt.Errorf("user id cannot be empty")
 	}
 
 	return nil
@@ -79,6 +95,10 @@ func (data *Expense) ExpenseByID(db DB) (*Expense, error) {
 		&expense.CreatedAt,
 		&expense.UpdatedAt,
 	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
@@ -90,14 +110,20 @@ func (data *Expense) CreateExpense(db DB) error {
 		return fmt.Errorf("connection not established")
 	}
 
+	if err := data.CreateValidation(); err != nil {
+		return err
+	}
+
+	expenseID := common.GenerateCustomGuideID()
+
 	args := []any{
-		data.ExpenseID,
+		expenseID,
 		data.Name,
 		data.Value,
 		data.Date,
 		data.UserID,
-		data.CreatedAt,
-		data.UpdatedAt,
+		time.Now(),
+		time.Now(),
 	}
 
 	_, err := db.Exec(CreateExpenseQuery, args...)
@@ -114,16 +140,25 @@ func (data *Expense) UpdateExpense(db DB) error {
 		return err
 	}
 
+	expense, err := data.ExpenseByID(db)
+	if err != nil {
+		return fmt.Errorf("error when get expense. Error: %v", err)
+	}
+
+	if expense == nil {
+		return fmt.Errorf("expense not found")
+	}
+
 	args := []any{
 		data.ExpenseID,
 		data.Name,
 		data.Value,
 		data.Date,
 		data.UserID,
-		data.UpdatedAt,
+		time.Now(),
 	}
 
-	_, err := db.Exec(UpdateExpenseQuery, args...)
+	_, err = db.Exec(UpdateExpenseQuery, args...)
 
 	return err
 }
@@ -137,7 +172,18 @@ func DeleteExpense(expenseID string, db DB) error {
 		return fmt.Errorf("expense id cannot be empty")
 	}
 
-	_, err := db.Exec(DeleteExpenseQuery, expenseID)
+	data := Expense{ExpenseID: expenseID}
+
+	expense, err := data.ExpenseByID(db)
+	if err != nil {
+		return fmt.Errorf("error when get expense. Error: %v", err)
+	}
+
+	if expense == nil {
+		return fmt.Errorf("expense not found")
+	}
+
+	_, err = db.Exec(DeleteExpenseQuery, expenseID)
 
 	return err
 }

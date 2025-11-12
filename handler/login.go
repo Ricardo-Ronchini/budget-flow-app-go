@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte("sua-chave-secreta-super-segura") // ideal usar env
+var jwtSecret = []byte("secure-secret-key")
 
 type LoginCredentials struct {
 	UserName string `json:"username"`
@@ -61,10 +61,9 @@ var V1Login = &contexts.WebRoute{
 			}
 		}
 
-		// Criação do token JWT | mock
 		claims := jwt.MapClaims{
 			"username": *user.UserName,
-			"email":    *user.Email,
+			"user_id":  &user.UserID,
 			"exp":      time.Now().Add(2 * time.Hour).Unix(),
 		}
 
