@@ -41,8 +41,9 @@ type WebRoute struct {
 	Authenticate    bool
 }
 
+// CheckPermissionLevel returns true when the caller's level is in the route's allowed list.
+// Routes with Authenticate: false skip the check entirely — they are public by declaration.
 func (ctx *Context) CheckPermissionLevel(w *WebRoute) bool {
-	// bypass for endpoints without authentication
 	if !w.Authenticate {
 		return true
 	}
@@ -54,6 +55,8 @@ func (ctx *Context) CheckPermissionLevel(w *WebRoute) bool {
 	return slices.Contains(w.PermissionLevel, PermissionName(ctx.API().Session().UserLevel))
 }
 
+// HandlerWebRoute converts a WebRoute into an EchoHandler, injecting permission enforcement
+// before the handler runs so access control stays at the route declaration site.
 func (ctx *Context) HandlerWebRoute(w *WebRoute) *EchoHandler {
 	return &EchoHandler{
 		Path:   w.Path,

@@ -12,6 +12,8 @@ import (
 
 var jwtSecret = []byte("sua-chave-secreta-super-segura")
 
+// Middleware validates the Bearer JWT and injects user_id into the request context.
+// Downstream handlers retrieve the user ID via auth.GetUserID — they never re-parse the token.
 func Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		authHeader := c.Request().Header.Get("Authorization")

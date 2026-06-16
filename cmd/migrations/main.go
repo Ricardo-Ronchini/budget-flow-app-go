@@ -12,6 +12,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
+// main runs the migration CLI. It resolves dirty state before any command so that
+// an interrupted migration run does not permanently block future up/down operations.
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("Passe o comando 'up' ou 'down' para seguir...")
