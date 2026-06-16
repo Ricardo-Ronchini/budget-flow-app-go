@@ -1,0 +1,16 @@
+# Environment
+.env
+
+# Docs (internal planning)
+docs/
+
+# Build artifacts
+*.exe
+*.test
+*.out
+
+# Dependencies
+vendor/
+
+# Temp
+/tmp
